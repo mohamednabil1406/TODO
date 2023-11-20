@@ -1,6 +1,6 @@
 // AddTaskScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AddTaskScreen = ({ navigation, route }) => {
@@ -9,16 +9,17 @@ const AddTaskScreen = ({ navigation, route }) => {
     const [taskCategory, setTaskCategory] = useState('');
 
     const handleAddTask = () => {
-        if (!taskName || !taskDescription || !taskCategory) {
-            alert('Please fill in all fields');
+        // Validation: Task name is necessary
+        if (!taskName.trim()) {
+            Alert.alert('Validation Error', 'Task name is required.');
             return;
         }
 
         const newTask = {
             id: Math.random().toString(),
-            name: taskName,
-            description: taskDescription,
-            category: taskCategory,
+            name: taskName.trim(),
+            description: taskDescription.trim(),
+            category: taskCategory.trim(),
         };
 
         // Retrieve the existing tasks from AsyncStorage
@@ -35,14 +36,10 @@ const AddTaskScreen = ({ navigation, route }) => {
             })
             .catch((error) => {
                 console.error('Error saving tasks to AsyncStorage:', error);
+                Alert.alert('Error', 'Failed to save the task. Please try again.');
             });
-        navigation.setOptions({
-            params: {
-                tasks: updatedTasks,
-            },
-        });
-        // Navigate back to TaskListScreen
-        navigation.goBack();
+
+        navigation.goBack(); // Navigate back to TaskListScreen
     };
 
     return (
@@ -51,7 +48,7 @@ const AddTaskScreen = ({ navigation, route }) => {
 
             <TextInput
                 style={styles.input}
-                placeholder="Task Name"
+                placeholder="Task Name *"
                 value={taskName}
                 onChangeText={(text) => setTaskName(text)}
             />
