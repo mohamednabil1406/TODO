@@ -1,14 +1,15 @@
 // TaskListScreen.js
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TASKS_STORAGE_KEY = 'tasks';
 
-const TaskListScreen = ({ navigation }) => {
+const TaskListScreen = ({ navigation, route }) => {
     const [tasks, setTasks] = useState([]);
+    const [editingTask, setEditingTask] = useState(null);
+    const [editedTask, setEditedTask] = useState(null);
 
     useEffect(() => {
         loadTasks();
@@ -40,12 +41,52 @@ const TaskListScreen = ({ navigation }) => {
         }
     };
 
+    const handleDeleteTask = (taskId) => {
+        const updatedTasks = tasks.filter((task) => task.id !== taskId);
+        setTasks(updatedTasks);
+    };
+
+    const handleEditTask = (taskId) => {
+        setEditingTask(taskId);
+        const taskToEdit = tasks.find((task) => task.id === taskId);
+        setEditedTask({ ...taskToEdit });
+    };
+
+    const handleSaveTask = () => {
+        const updatedTasks = tasks.map((task) =>
+            task.id === editingTask ? { ...editedTask } : task
+        );
+        setTasks(updatedTasks);
+        setEditingTask(null);
+        setEditedTask(null);
+        saveTasks();
+        navigation.setOptions({
+            params: {
+                tasks: updatedTasks,
+            },
+        });
+    };
+
     const renderItem = ({ item }) => (
         <View style={styles.taskItem}>
             <View style={styles.taskInfo}>
                 <Text style={styles.taskName}>Name: {item.name}</Text>
                 <Text style={styles.taskDescription}>Description: {item.description}</Text>
                 <Text style={styles.taskCategory}>Category: {item.category}</Text>
+            </View>
+
+            <View style={styles.buttonsContainer}>
+                <TouchableOpacity onPress={() => handleDeleteTask(item.id)}>
+                    <View style={styles.deleteButton}>
+                        <Ionicons name="ios-trash" size={24} color="white" />
+                    </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => handleEditTask(item.id)}>
+                    <View style={styles.editButton}>
+                        <Ionicons name="ios-create" size={24} color="white" />
+                    </View>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -65,6 +106,56 @@ const TaskListScreen = ({ navigation }) => {
             >
                 <Ionicons name="ios-add" size={36} color="white" />
             </TouchableOpacity>
+            <Modal
+                visible={editingTask !== null}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => {
+                    setEditingTask(null);
+                    setEditedTask(null);
+                }}
+            >
+                <TouchableOpacity
+                    style={styles.editTaskModal}
+                    activeOpacity={1} // Disables the default opacity effect
+                    onPress={() => {
+                        setEditingTask(null);
+                        setEditedTask(null);
+                    }}
+                >
+                    <View style={styles.editTaskContainer}>
+                        <Text style={styles.editTaskTitle}>Edit Task</Text>
+                        <TextInput
+                            style={styles.editTaskInput}
+                            placeholder="Task Name"
+                            value={editedTask?.name}
+                            onChangeText={(text) =>
+                                setEditedTask((prevTask) => ({ ...prevTask, name: text }))
+                            }
+                        />
+                        <TextInput
+                            style={styles.editTaskInput}
+                            placeholder="Task Description"
+                            value={editedTask?.description}
+                            onChangeText={(text) =>
+                                setEditedTask((prevTask) => ({ ...prevTask, description: text }))
+                            }
+                        />
+                        <TextInput
+                            style={styles.editTaskInput}
+                            placeholder="Task Category"
+                            value={editedTask?.category}
+                            onChangeText={(text) =>
+                                setEditedTask((prevTask) => ({ ...prevTask, category: text }))
+                            }
+                        />
+                        <TouchableOpacity style={styles.saveButton} onPress={handleSaveTask}>
+                            <Ionicons name="ios-checkmark-circle" size={36} color="blue" />
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
         </View>
     );
 };
@@ -100,6 +191,17 @@ const styles = StyleSheet.create({
     taskCategory: {
         color: '#3498db', // Blue text color
     },
+    deleteButton: {
+        backgroundColor: '#1e90ff', // Dodger blue background
+        borderRadius: 10,
+        padding: 5,
+        marginRight: 8,
+    },
+    editButton: {
+        backgroundColor: '#1e90ff', // Dodger blue background
+        borderRadius: 10,
+        padding: 5,
+    },
     addButton: {
         backgroundColor: '#1e90ff', // Dodger blue background
         borderRadius: 50,
@@ -114,6 +216,43 @@ const styles = StyleSheet.create({
     },
     flatList: {
         flex: 1,
+    },
+    buttonsContainer: {
+        flexDirection: 'row',
+    },
+    editTaskModal: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black background
+    },
+    editTaskContainer: {
+        backgroundColor: 'white',
+        padding: 16,
+        borderRadius: 8,
+        width: '80%',
+    },
+    editTaskTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 16,
+    },
+    editTaskInput: {
+        height: 40,
+        borderColor: '#b0c4de', // Lighter blue border color
+        borderWidth: 1,
+        marginBottom: 16,
+        paddingHorizontal: 8,
+    },
+    saveButton: {
+        // backgroundColor: '#1e90ff', // Dodger blue background
+        borderRadius: 50,
+        width: 50,
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginTop: 16,
     },
 });
 
