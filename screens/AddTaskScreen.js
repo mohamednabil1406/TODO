@@ -100,4 +100,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default AddTaskScreen;
+export default AddTaskScreen; //export add task screen
