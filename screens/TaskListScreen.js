@@ -83,9 +83,15 @@ const TaskListScreen = ({ navigation, route }) => {
     const renderItem = ({ item }) => (
         <View style={styles.taskItem}>
             <View style={styles.taskInfo}>
-                <Text style={styles.taskName}>Name: {item.name}</Text>
-                <Text style={styles.taskDescription}>Description: {item.description}</Text>
-                <Text style={styles.taskCategory}>Category: {item.category}</Text>
+                <Text style={styles.taskName}>
+                    <Text style={styles.boldText}></Text> {item.name}
+                </Text>
+                <Text style={styles.taskDescription}>
+                    <Text style={styles.boldText}></Text> {item.description}
+                </Text>
+                <Text style={styles.taskCategory}>
+                    <Text style={[styles.italicText, styles.boldText]}></Text> {item.category}
+                </Text>
             </View>
 
             <View style={styles.buttonsContainer}>
@@ -197,11 +203,15 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333', // Dark text color
     },
-    taskDescription: {
-        color: '#666', // Gray text color
-    },
     taskCategory: {
         color: '#3498db', // Blue text color
+        fontStyle: 'italic', // Italic style for category
+    },
+    boldText: {
+        fontWeight: 'bold',
+    },
+    italicText: {
+        fontStyle: 'italic',
     },
     deleteButton: {
         backgroundColor: '#1e90ff', // Dodger blue background
