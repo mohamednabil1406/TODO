@@ -11,6 +11,17 @@ A simple and efficient ToDo app built with React Native that helps you manage yo
 - **State Management**: Efficient state management to handle the list of items and any new items added in real-time.
 - **Persistent Storage**: Store your task list persistently, ensuring that your tasks remain available even if the app is closed and reopened.
 
+## Screenshots 📸
+
+Visual representation of the app with screenshots:
+
+![Task List](./screenshots/sc1.png)
+![Add Task](./screenshots/sc2.png)
+![Edit Task](./screenshots/sc3.png)
+![Error Validation](./screenshots/sc4.png)
+
+
+
 ## Getting Started 🚀
 
 To run this project locally, follow these steps:
