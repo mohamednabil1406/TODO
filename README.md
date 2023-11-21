@@ -4,6 +4,7 @@ A simple and efficient ToDo app built with React Native that helps you manage yo
 
 ## Features ✨
 
+- **Cross platform mobile app**: supports both ios and android
 - **List All User Tasks**: View all your tasks at a glance in the list view.
 - **Add, Edit, and Delete Tasks**: Easily add, edit, or delete tasks based on your needs.
 - **Input Error Validation**: Ensure data integrity with input error validation, providing a smooth user experience.
