@@ -1,6 +1,14 @@
-// TaskListScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Modal } from 'react-native';
+import {
+    View,
+    Text,
+    FlatList,
+    StyleSheet,
+    TouchableOpacity,
+    TextInput,
+    Modal,
+    Alert,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -53,6 +61,11 @@ const TaskListScreen = ({ navigation, route }) => {
     };
 
     const handleSaveTask = () => {
+        if (!editedTask || !editedTask.name) {
+            Alert.alert('Validation Error', 'Task name is required.');
+            return;
+        }
+
         const updatedTasks = tasks.map((task) =>
             task.id === editingTask ? { ...editedTask } : task
         );
@@ -127,7 +140,7 @@ const TaskListScreen = ({ navigation, route }) => {
                         <Text style={styles.editTaskTitle}>Edit Task</Text>
                         <TextInput
                             style={styles.editTaskInput}
-                            placeholder="Task Name"
+                            placeholder="Task Name *"
                             value={editedTask?.name}
                             onChangeText={(text) =>
                                 setEditedTask((prevTask) => ({ ...prevTask, name: text }))
@@ -155,7 +168,6 @@ const TaskListScreen = ({ navigation, route }) => {
                     </View>
                 </TouchableOpacity>
             </Modal>
-
         </View>
     );
 };
@@ -256,4 +268,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default TaskListScreen;
+export default TaskListScreen; //export task list screen
