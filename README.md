@@ -17,7 +17,7 @@ Visual representation of the app with screenshots:
 
 <p float="left">
   <img src="./screenshots/sc1.png" width="200" />
-  <img src="./screenshots/sc3.png" width="200" />
+  <img src="./screenshots/sc2.png" width="200" />
   <img src="./screenshots/sc3.png" width="200" />
   <img src="./screenshots/sc4.png" width="200" />
 </p>
