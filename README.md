@@ -15,12 +15,12 @@ A simple and efficient ToDo app built with React Native that helps you manage yo
 
 Visual representation of the app with screenshots:
 
-![Task List](./screenshots/sc1.png)
-![Add Task](./screenshots/sc2.png)
-![Edit Task](./screenshots/sc3.png)
-![Error Validation](./screenshots/sc4.png)
-
-
+<p float="left">
+  <img src="./screenshots/sc1.png" width="200" />
+  <img src="./screenshots/sc3.png" width="200" />
+  <img src="./screenshots/sc3.png" width="200" />
+  <img src="./screenshots/sc4.png" width="200" />
+</p>
 
 ## Getting Started 🚀
 
