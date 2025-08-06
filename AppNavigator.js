@@ -38,3 +38,4 @@ const AppNavigator = () => {
 };
 
 export default AppNavigator;
+//new
