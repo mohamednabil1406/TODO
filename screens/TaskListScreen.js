@@ -8,50 +8,55 @@ import {
     TextInput,
     Modal,
     Alert,
+    LayoutAnimation,
+    Platform,
+    UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TASKS_STORAGE_KEY = 'tasks';
 
-const TaskListScreen = ({ navigation, route }) => {
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const TaskListScreen = ({ navigation }) => {
     const [tasks, setTasks] = useState([]);
     const [editingTask, setEditingTask] = useState(null);
     const [editedTask, setEditedTask] = useState(null);
 
     useEffect(() => {
-        loadTasks();
-    }, []);
-
-    useEffect(() => {
-        saveTasks();
-        navigation.setOptions({
-            title: `To-do `,
+        const unsubscribe = navigation.addListener('focus', () => {
+            loadTasks();
         });
-    }, [tasks]);
+        return unsubscribe;
+    }, [navigation]);
 
     const loadTasks = async () => {
         try {
             const storedTasks = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
-            if (storedTasks !== null) {
+            if (storedTasks) {
                 setTasks(JSON.parse(storedTasks));
             }
         } catch (error) {
-            console.error('Error loading tasks from AsyncStorage:', error);
+            console.error('Error loading tasks:', error);
         }
     };
 
-    const saveTasks = async () => {
+    const saveTasks = async (updatedTasks) => {
         try {
-            await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+            await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(updatedTasks));
         } catch (error) {
-            console.error('Error saving tasks to AsyncStorage:', error);
+            console.error('Error saving tasks:', error);
         }
     };
 
     const handleDeleteTask = (taskId) => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         const updatedTasks = tasks.filter((task) => task.id !== taskId);
         setTasks(updatedTasks);
+        saveTasks(updatedTasks);
     };
 
     const handleEditTask = (taskId) => {
@@ -61,49 +66,60 @@ const TaskListScreen = ({ navigation, route }) => {
     };
 
     const handleSaveTask = () => {
-        if (!editedTask || !editedTask.name) {
+        if (!editedTask || !editedTask.name.trim()) {
             Alert.alert('Validation Error', 'Task name is required.');
             return;
         }
 
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         const updatedTasks = tasks.map((task) =>
             task.id === editingTask ? { ...editedTask } : task
         );
         setTasks(updatedTasks);
+        saveTasks(updatedTasks);
         setEditingTask(null);
         setEditedTask(null);
-        saveTasks();
-        navigation.setOptions({
-            params: {
-                tasks: updatedTasks,
-            },
-        });
+    };
+
+    const getCategoryStyle = (category) => {
+        switch (category.toLowerCase()) {
+            case 'work':
+                return styles.categoryWork;
+            case 'personal':
+                return styles.categoryPersonal;
+            case 'shopping':
+                return styles.categoryShopping;
+            default:
+                return { backgroundColor: '#9ca3af' }; // Gray
+        }
     };
 
     const renderItem = ({ item }) => (
         <View style={styles.taskItem}>
             <View style={styles.taskInfo}>
-                <Text style={styles.taskName}>
-                    <Text style={styles.boldText}></Text> {item.name}
+                <Text style={[styles.taskName, item.completed && styles.completedText]}>
+                    {item.name}
                 </Text>
-                <Text style={styles.taskDescription}>
-                    <Text style={styles.boldText}></Text> {item.description}
-                </Text>
-                <Text style={styles.taskCategory}>
-                    <Text style={[styles.italicText, styles.boldText]}></Text> {item.category}
-                </Text>
+                {item.description ? (
+                    <Text style={[styles.taskDescription, item.completed && styles.completedText]}>
+                        {item.description}
+                    </Text>
+                ) : null}
+                {item.category ? (
+                    <Text style={[styles.taskCategory, getCategoryStyle(item.category)]}>
+                        {item.category}
+                    </Text>
+                ) : null}
             </View>
-
             <View style={styles.buttonsContainer}>
                 <TouchableOpacity onPress={() => handleDeleteTask(item.id)}>
                     <View style={styles.deleteButton}>
-                        <Ionicons name="ios-trash" size={24} color="white" />
+                        <Ionicons name="trash" size={24} color="white" />
                     </View>
                 </TouchableOpacity>
-
                 <TouchableOpacity onPress={() => handleEditTask(item.id)}>
                     <View style={styles.editButton}>
-                        <Ionicons name="ios-create" size={24} color="white" />
+                        <Ionicons name="create" size={24} color="white" />
                     </View>
                 </TouchableOpacity>
             </View>
@@ -112,19 +128,27 @@ const TaskListScreen = ({ navigation, route }) => {
 
     return (
         <View style={styles.container}>
-            <FlatList
-                data={tasks}
-                keyExtractor={(item) => item.id}
-                renderItem={renderItem}
-                style={styles.flatList}
-            />
+            {tasks.length === 0 ? (
+                <View style={styles.emptyState}>
+                    <Text style={styles.emptyText}>No tasks available</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={tasks}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderItem}
+                    style={styles.flatList}
+                    contentContainerStyle={{ paddingBottom: 100 }}
+                />
+            )}
 
             <TouchableOpacity
                 style={styles.addButton}
-                onPress={() => navigation.navigate('AddTask', { tasks, setTasks })}
+                onPress={() => navigation.navigate('AddTask')}
             >
-                <Ionicons name="ios-add" size={36} color="white" />
+                <Ionicons name="add" size={36} color="white" />
             </TouchableOpacity>
+
             <Modal
                 visible={editingTask !== null}
                 animationType="slide"
@@ -134,14 +158,7 @@ const TaskListScreen = ({ navigation, route }) => {
                     setEditedTask(null);
                 }}
             >
-                <TouchableOpacity
-                    style={styles.editTaskModal}
-                    activeOpacity={1} // Disables the default opacity effect
-                    onPress={() => {
-                        setEditingTask(null);
-                        setEditedTask(null);
-                    }}
-                >
+                <View style={styles.editTaskModal}>
                     <View style={styles.editTaskContainer}>
                         <Text style={styles.editTaskTitle}>Edit Task</Text>
                         <TextInput
@@ -149,7 +166,7 @@ const TaskListScreen = ({ navigation, route }) => {
                             placeholder="Task Name *"
                             value={editedTask?.name}
                             onChangeText={(text) =>
-                                setEditedTask((prevTask) => ({ ...prevTask, name: text }))
+                                setEditedTask((prev) => ({ ...prev, name: text }))
                             }
                         />
                         <TextInput
@@ -157,7 +174,7 @@ const TaskListScreen = ({ navigation, route }) => {
                             placeholder="Task Description"
                             value={editedTask?.description}
                             onChangeText={(text) =>
-                                setEditedTask((prevTask) => ({ ...prevTask, description: text }))
+                                setEditedTask((prev) => ({ ...prev, description: text }))
                             }
                         />
                         <TextInput
@@ -165,14 +182,14 @@ const TaskListScreen = ({ navigation, route }) => {
                             placeholder="Task Category"
                             value={editedTask?.category}
                             onChangeText={(text) =>
-                                setEditedTask((prevTask) => ({ ...prevTask, category: text }))
+                                setEditedTask((prev) => ({ ...prev, category: text }))
                             }
                         />
                         <TouchableOpacity style={styles.saveButton} onPress={handleSaveTask}>
-                            <Ionicons name="ios-checkmark-circle" size={36} color="blue" />
+                            <Ionicons name="checkmark-circle" size={36} color="white" />
                         </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
+                </View>
             </Modal>
         </View>
     );
@@ -181,101 +198,142 @@ const TaskListScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
-        backgroundColor: '#add8e6', // Light blue background
+        paddingHorizontal: 16,
+        paddingTop: 24,
+        backgroundColor: '#f0f4f8',
+    },
+    flatList: {
+        flex: 1,
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 18,
+        color: '#888',
     },
     taskItem: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#b0c4de', // Lighter blue border color
-        borderRadius: 8,
+        backgroundColor: 'white',
+        borderRadius: 12,
         padding: 16,
-        marginBottom: 8,
-        backgroundColor: 'white', // White background
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 5,
+        elevation: 4,
     },
     taskInfo: {
         flex: 1,
     },
     taskName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333', // Dark text color
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#222',
+    },
+    taskDescription: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 4,
     },
     taskCategory: {
-        color: '#3498db', // Blue text color
-        fontStyle: 'italic', // Italic style for category
+        fontSize: 12,
+        color: '#fff',
+        alignSelf: 'flex-start',
+        marginTop: 6,
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: 12,
+        fontWeight: '600',
     },
-    boldText: {
-        fontWeight: 'bold',
+    completedText: {
+        textDecorationLine: 'line-through',
+        color: '#9ca3af',
     },
-    italicText: {
-        fontStyle: 'italic',
+    categoryWork: {
+        backgroundColor: '#f97316', // Orange
     },
-    deleteButton: {
-        backgroundColor: '#1e90ff', // Dodger blue background
-        borderRadius: 10,
-        padding: 5,
-        marginRight: 8,
+    categoryPersonal: {
+        backgroundColor: '#3b82f6', // Blue
     },
-    editButton: {
-        backgroundColor: '#1e90ff', // Dodger blue background
-        borderRadius: 10,
-        padding: 5,
-    },
-    addButton: {
-        backgroundColor: '#1e90ff', // Dodger blue background
-        borderRadius: 50,
-        width: 50,
-        height: 50,
-        position: 'absolute',
-        bottom: 16,
-        right: '40%',
-        transform: [{ translateX: -25 }],
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    flatList: {
-        flex: 1,
+    categoryShopping: {
+        backgroundColor: '#10b981', // Green
     },
     buttonsContainer: {
         flexDirection: 'row',
+        marginLeft: 12,
+    },
+    deleteButton: {
+        backgroundColor: '#ef4444',
+        borderRadius: 8,
+        padding: 8,
+        marginRight: 8,
+    },
+    editButton: {
+        backgroundColor: '#2563eb',
+        borderRadius: 8,
+        padding: 8,
+    },
+    addButton: {
+        backgroundColor: '#6366f1',
+        borderRadius: 30,
+        width: 60,
+        height: 60,
+        position: 'absolute',
+        bottom: 24,
+        right: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 7,
+        elevation: 10,
     },
     editTaskModal: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black background
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
     },
     editTaskContainer: {
         backgroundColor: 'white',
-        padding: 16,
-        borderRadius: 8,
-        width: '80%',
+        padding: 24,
+        borderRadius: 20,
+        width: '85%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 12,
     },
     editTaskTitle: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 16,
+        marginBottom: 20,
+        color: '#111',
+        textAlign: 'center',
     },
     editTaskInput: {
-        height: 40,
-        borderColor: '#b0c4de', // Lighter blue border color
+        height: 48,
+        borderColor: '#d1d5db',
         borderWidth: 1,
-        marginBottom: 16,
-        paddingHorizontal: 8,
+        marginBottom: 18,
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        fontSize: 16,
     },
     saveButton: {
-        // backgroundColor: '#1e90ff', // Dodger blue background
-        borderRadius: 50,
-        width: 50,
+        backgroundColor: '#4f46e5',
+        borderRadius: 30,
         height: 50,
         justifyContent: 'center',
         alignItems: 'center',
-        alignSelf: 'center',
-        marginTop: 16,
     },
 });
 
-export default TaskListScreen; //export task list screen
+export default TaskListScreen;

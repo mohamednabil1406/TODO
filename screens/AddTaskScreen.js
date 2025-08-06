@@ -2,79 +2,63 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LogBox } from 'react-native';
-LogBox.ignoreLogs(['Non-serializable values were found in the navigation state',]);
+
 const AddTaskScreen = ({ navigation, route }) => {
     const [taskName, setTaskName] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
     const [taskCategory, setTaskCategory] = useState('');
 
-    const handleAddTask = () => {
-        // Validation: Task name is necessary
+    const handleAddTask = async () => {
         if (!taskName.trim()) {
             Alert.alert('Validation Error', 'Task name is required.');
             return;
         }
 
         const newTask = {
-            id: Math.random().toString(),
+            id: Date.now().toString(),
             name: taskName.trim(),
             description: taskDescription.trim(),
             category: taskCategory.trim(),
         };
 
-        // Retrieve the existing tasks from AsyncStorage
-        const existingTasks = route.params.tasks || [];
+        try {
+            const storedTasks = await AsyncStorage.getItem('tasks');
+            const existingTasks = storedTasks ? JSON.parse(storedTasks) : [];
+            const updatedTasks = [...existingTasks, newTask];
 
-        // Update the tasks with the new task
-        const updatedTasks = [...existingTasks, newTask];
-
-        // Save the updated tasks to AsyncStorage
-        AsyncStorage.setItem('tasks', JSON.stringify(updatedTasks))
-            .then(() => {
-                // Update the tasks state in TaskListScreen
-                route.params.setTasks(updatedTasks);
-            })
-            .catch((error) => {
-                console.error('Error saving tasks to AsyncStorage:', error);
-                Alert.alert('Error', 'Failed to save the task. Please try again.');
-            });
-
-        navigation.goBack(); // Navigate back to TaskListScreen
+            await AsyncStorage.setItem('tasks', JSON.stringify(updatedTasks));
+            navigation.goBack();
+        } catch (error) {
+            console.error('Error saving task:', error);
+            Alert.alert('Error', 'Failed to save the task.');
+        }
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Add Task Screen</Text>
+            <Text style={styles.title}>Add Task</Text>
 
             <TextInput
                 style={styles.input}
                 placeholder="Task Name *"
                 value={taskName}
-                onChangeText={(text) => setTaskName(text)}
+                onChangeText={setTaskName}
             />
-
             <TextInput
                 style={styles.input}
                 placeholder="Task Description"
                 value={taskDescription}
-                onChangeText={(text) => setTaskDescription(text)}
+                onChangeText={setTaskDescription}
             />
-
             <TextInput
                 style={styles.input}
                 placeholder="Task Category"
                 value={taskCategory}
-                onChangeText={(text) => setTaskCategory(text)}
+                onChangeText={setTaskCategory}
             />
 
             <Button title="Add Task" onPress={handleAddTask} />
-
-            <Button
-                title="Go Back"
-                onPress={() => navigation.goBack()}
-                color="#808080"
-            />
+            <Button title="Go Back" onPress={() => navigation.goBack()} color="#808080" />
         </View>
     );
 };
@@ -83,22 +67,22 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
-        backgroundColor: '#add8e6', // Light blue background
+        backgroundColor: '#add8e6',
     },
     title: {
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 16,
-        color: '#333', // Dark text color
+        color: '#333',
     },
     input: {
         height: 40,
-        borderColor: '#b0c4de', // Lighter blue border color
+        borderColor: '#b0c4de',
         borderWidth: 1,
         marginBottom: 16,
         paddingHorizontal: 8,
-        backgroundColor: 'white', // White background
+        backgroundColor: 'white',
     },
 });
 
-export default AddTaskScreen; //export add task screen
+export default AddTaskScreen;
